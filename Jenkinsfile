@@ -5,7 +5,7 @@ pipeline {
     stage('build') {
       parallel {
 
-        stage('Android Release') {
+        /*stage('Android Release') {
           environment {
             CCACHE_BASEDIR = "${env.WORKSPACE}"
             QGC_CONFIG = 'release'
@@ -92,7 +92,7 @@ pipeline {
             }
           }
         }
-
+        */
         stage('Linux Release') {
           environment {
             CCACHE_BASEDIR = "${env.WORKSPACE}"
@@ -100,11 +100,10 @@ pipeline {
             QMAKE_VER = "5.11.0/gcc_64/bin/qmake"
           }
           agent {
-            label 'ubuntu'
-            /*docker {
+            docker {
               image 'mavlink/qgc-build-linux:2019-02-03'
               args '-v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
-            }*/
+            }
           }
           steps {
             sh 'export'
@@ -125,7 +124,7 @@ pipeline {
             }
           }
         }
-
+        /*
         stage('Linux Release (cmake)') {
           environment {
             CCACHE_BASEDIR = "${env.WORKSPACE}"
@@ -251,7 +250,9 @@ pipeline {
               steps {
                 sh 'mkdir build; cd build; ${QT_PATH}/${QMAKE_VER} -r ${WORKSPACE}/qgroundcontrol.pro CONFIG+=${QGC_CONFIG} CONFIG+=WarningsAsErrorsOn'
                 sh 'cd build; make -j`sysctl -n hw.ncpu`'
-                archiveArtifacts(artifacts: 'build/**/*.dmg', fingerprint: true)
+                */
+                //archiveArtifacts(artifacts: 'build/**/*.dmg', fingerprint: true)
+                /*
                 sh 'ccache -s'
               }
             }
@@ -307,13 +308,12 @@ pipeline {
             QGC_CUSTOM_APP_ICON_NAME = "qgroundcontrol"
           }
           agent {
-            label 'centos'
-            /*docker {
+            docker {
               alwaysPull true
               label 'docker'
               image 'stefandunca/qgc:centos-5.12.4'
               args '-v ${CCACHE_DIR}:${CCACHE_DIR}:rw --privileged --cap-add SYS_ADMIN --device /dev/fuse'
-            }*/
+            }
           }
           steps {
             sh 'export'
@@ -341,33 +341,35 @@ pipeline {
             }
           }
         }
+
+
         stage('Windows Release') {
-            environment {
-              QGC_CONFIG = 'release installer separate_debug_info force_debug_info qtquickcompiler'
-            }
-            agent {
-              node {
-                label 'windows'
-              }
-            }
-            steps {
-              bat 'git submodule sync && git submodule deinit -f .'
-              bat 'git clean -ff -x -d .'
-              bat 'git submodule update --init --recursive --force'
-              bat '.\\tools\\build\\build_windows.bat release build'
-              bat 'copy /Y .\\build\\release\\*-installer.exe .\\'
-            }
-            post {
-              always {
-                  archiveArtifacts artifacts: 'build/release/**/*', onlyIfSuccessful: true
-                  archiveArtifacts artifacts: '*-installer.exe'
-              }
-              cleanup {
-                //bat 'git clean -ff -x -e build-dev -d .'
-                bat 'git clean -ff -x -d .'
-              }
+          environment {
+            QGC_CONFIG = 'release installer separate_debug_info force_debug_info qtquickcompiler'
+          }
+          agent {
+            node {
+              label 'windows'
             }
           }
+          steps {
+            bat 'git submodule sync && git submodule deinit -f .'
+            bat 'git clean -ff -x -d .'
+            bat 'git submodule update --init --recursive --force'
+            bat '.\\tools\\build\\build_windows.bat release build'
+            bat 'copy /Y .\\build\\release\\*-installer.exe .\\'
+          }
+          post {
+            always {
+                archiveArtifacts artifacts: 'build/release/**/*', onlyIfSuccessful: true
+                archiveArtifacts artifacts: '*-installer.exe'
+            }
+            cleanup {
+              //bat 'git clean -ff -x -e build-dev -d .'
+              bat 'git clean -ff -x -d .'
+            }
+          }
+        }
       } // parallel
     } // stage('build')
   } // stages
