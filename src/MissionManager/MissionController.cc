@@ -71,6 +71,11 @@ MissionController::MissionController(PlanMasterController* masterController, QOb
     , _currentPlanViewItem      (nullptr)
     , _splitSegment             (nullptr)
 {
+
+}
+
+void
+MissionController::init() {
     _missionManager = _managerVehicle->missionManager();
     _resetMissionFlightStatus();
     managerVehicleChanged(_managerVehicle);

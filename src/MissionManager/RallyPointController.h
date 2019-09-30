@@ -28,6 +28,8 @@ class RallyPointController : public PlanElementController
 public:
     RallyPointController(PlanMasterController* masterController, QObject* parent = nullptr);
     ~RallyPointController();
+
+    void init();
     
     Q_PROPERTY(QmlObjectListModel*  points                  READ points                                             CONSTANT)
     Q_PROPERTY(QString              editorQml               READ editorQml                                          CONSTANT)

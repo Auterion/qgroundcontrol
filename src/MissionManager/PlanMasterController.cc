@@ -57,6 +57,10 @@ PlanMasterController::PlanMasterController(QObject* parent)
     _missionController = new MissionController(this);
     _geoFenceController = new GeoFenceController(this);
     _rallyPointController = new RallyPointController(this);
+    _missionController->init();
+    _geoFenceController->init();
+    _rallyPointController->init();
+
     connect(_missionController,    &MissionController::dirtyChanged,       this, &PlanMasterController::dirtyChanged);
     connect(_geoFenceController,   &GeoFenceController::dirtyChanged,      this, &PlanMasterController::dirtyChanged);
     connect(_rallyPointController, &RallyPointController::dirtyChanged,    this, &PlanMasterController::dirtyChanged);
