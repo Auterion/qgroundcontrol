@@ -57,7 +57,7 @@ const QString MissionController::patternCorridorScanName   (QT_TRANSLATE_NOOP("M
 
 MissionController::MissionController(PlanMasterController* masterController, QObject *parent)
     : PlanElementController     (masterController, parent)
-    , _missionManager           (_managerVehicle->missionManager())
+    , _missionManager           (nullptr)
     , _missionItemCount         (0)
     , _visualItems              (nullptr)
     , _settingsItem             (nullptr)
@@ -71,6 +71,7 @@ MissionController::MissionController(PlanMasterController* masterController, QOb
     , _currentPlanViewItem      (nullptr)
     , _splitSegment             (nullptr)
 {
+    _missionManager = _managerVehicle->missionManager();
     _resetMissionFlightStatus();
     managerVehicleChanged(_managerVehicle);
     _updateTimer.setSingleShot(true);
