@@ -41,8 +41,6 @@ git:
     - $SH "ccache -z"
     - $SH "mkdir \$SHADOW_BUILD_DIR && cd \$SHADOW_BUILD_DIR && qmake -r $PWD/qgroundcontrol.pro CONFIG+=$CONFIG && make -j`nproc --all`"
     - $SH "ccache -s"
-  after_success:
-    - docker push $DOCKER_IMAGE
   before_deploy:
     - mkdir $RELEASE_DIR
     # create linux appimage
@@ -72,8 +70,8 @@ deploy:
   # release a stable version when a commit is tagged with prefix "v*'
   - <<: *template_deploy
     on:
-      all_branches: true
       tags: true
+      branch: master
       condition: "$TRAVIS_TAG =~ ^v*$ && $CONFIG == installer"
   #  # pre-release a version for each commit with prefix 'pr-*' on any branch except master
   - <<: *template_deploy
@@ -82,8 +80,6 @@ deploy:
     on:
       all_branches: true
       tags: true
-      branch:
-        - /^pr-$/
       condition: $CONFIG == installer
 
 notifications:
