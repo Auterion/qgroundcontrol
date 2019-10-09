@@ -39,6 +39,7 @@ git:
     - $SH "ccache -z"
     - $SH "mkdir \$SHADOW_BUILD_DIR && cd \$SHADOW_BUILD_DIR && qmake -r $PWD/qgroundcontrol.pro CONFIG+=$CONFIG && make -j`nproc --all`"
     - $SH "ccache -s"
+    - $SH "ls -lah \$SHADOW_BUILD_DIR/release"
   before_deploy:
     - mkdir $RELEASE_DIR
     # create linux appimage
