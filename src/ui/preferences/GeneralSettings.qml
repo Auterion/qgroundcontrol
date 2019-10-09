@@ -1064,14 +1064,18 @@ Rectangle {
                     Item { width: 1; height: _margins }
 
                     QGCLabel {
-                        text:               qsTr("%1 Version: %2").arg(QGroundControl.appName).arg(QGroundControl.qgcVersion)
+                        text:               qsTr("CustomQGC Version")
                         Layout.alignment:   Qt.AlignHCenter
                     }
                     QGCLabel {
-                        text:               qsTr("Custom Version: %1").arg(QGroundControl.corePlugin.customVersion)
-                        visible:            QGroundControl.corePlugin.customVersion !== undefined
+                        text:               qsTr("%1").arg(QGroundControl.qgcVersion)
                         Layout.alignment:   Qt.AlignHCenter
                     }
+//                    QGCLabel {
+//                        text:               qsTr("Custom Version: %1").arg(QGroundControl.corePlugin.customVersion)
+//                        visible:            QGroundControl.corePlugin.customVersion !== undefined
+//                        Layout.alignment:   Qt.AlignHCenter
+//                    }
                     QGCLabel {
                         text:               qsTr("Custom Development Version: %1").arg(QGroundControl.corePlugin.customGitVersion)
                         visible:            QGroundControl.corePlugin.customGitVersion !== undefined && QGroundControl.corePlugin.showAdvancedUI
