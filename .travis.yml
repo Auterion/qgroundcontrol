@@ -28,7 +28,6 @@ cache: ccache
 
 git:
   depth: false
-  submodules: false
 
 .template_linux: &template_linux
   os: linux
@@ -67,11 +66,6 @@ matrix:
         - DOCKER_IMAGE=auterion/ags_builder_centos
         #to rename the duplicated AuterionGS.AppImage name during Github Release deploy, avoid overwrite
         - APPIMAGE_BINARY_NAME="AuterionGS_centos.AppImage"
-
-before_install:
-  # inject CI User github OAuth Token stored as env in Travis-CI Project
-  - echo -e "machine github.com\n  login $CI_USER_TOKEN" > ~/.netrc
-  - git submodule update --init --recursive --force
 
 .template_deploy: &template_deploy
   provider: releases
