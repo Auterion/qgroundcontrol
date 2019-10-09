@@ -1,12 +1,17 @@
 language: cpp
+
 env:
   global:
     - CONFIG=installer
     - RELEASE_DIR=/tmp/release
     - DOCKER_USER=auterionci
-    - secure: OcY43uy3fGkq7stbHJKvr1FZawgVd0G+y2bojAOjp/I0asCblUZLZU6ewddd8DRkR53+gYzK+MVfaRMKkSsh8s5eOWiXFPNgkyGFXLzroGXvKSipfAQ6v5ZTYR47sLRAETWkr8i9b4He1z55UUfIAsBkg75WGh2jpytN71Ia6ewBLgWZyVAPPrzUCOy2p2GN94/30br1zlFItfn+lpPktDrlAL2JQv/4/myo5WS5sxCmShgRFYssM4kuh5FBdCZykMKSuG0L2rFPe1KA8DLgU3lZfPuEnI+sr5uNzDQPjzem4Gi2KDpktF9zkdyE8uQrUSLLKjpjNdxO3SVRRr3NtJIRqh9b+tj4eoBA0SrodYHahu98C6vtSvw8vNt16FmYTCUwXFofMTGxzU9QedOYgo7MJBYrf+R23MpOBSFXknw0hDJMwyyXLM8nITwhWybA24qbYncJR0PNmpSB5uE1KaebSHNtXpXLe8Aag04h6z7pDWUnV4zU9fRQLcwaHhL1Mu/k0PrYZPXp0Ohtu10XYVhaCchq34ViEMM80If8ccEfYEYS7PTofMW7iA3rBXpQ8IC4ooN1eHh7CPUO9BYTEcHTtxtwGcM4mPrO3JW6GLHW5w2ejMwe8U22hZ+W5lBeT6TMjWpBavY1I6qGU18Et6d5uc86pWBkVgseX2QYRY4=
+    # encrypted DOCKER_PASS
+    - secure: "OcY43uy3fGkq7stbHJKvr1FZawgVd0G+y2bojAOjp/I0asCblUZLZU6ewddd8DRkR53+gYzK+MVfaRMKkSsh8s5eOWiXFPNgkyGFXLzroGXvKSipfAQ6v5ZTYR47sLRAETWkr8i9b4He1z55UUfIAsBkg75WGh2jpytN71Ia6ewBLgWZyVAPPrzUCOy2p2GN94/30br1zlFItfn+lpPktDrlAL2JQv/4/myo5WS5sxCmShgRFYssM4kuh5FBdCZykMKSuG0L2rFPe1KA8DLgU3lZfPuEnI+sr5uNzDQPjzem4Gi2KDpktF9zkdyE8uQrUSLLKjpjNdxO3SVRRr3NtJIRqh9b+tj4eoBA0SrodYHahu98C6vtSvw8vNt16FmYTCUwXFofMTGxzU9QedOYgo7MJBYrf+R23MpOBSFXknw0hDJMwyyXLM8nITwhWybA24qbYncJR0PNmpSB5uE1KaebSHNtXpXLe8Aag04h6z7pDWUnV4zU9fRQLcwaHhL1Mu/k0PrYZPXp0Ohtu10XYVhaCchq34ViEMM80If8ccEfYEYS7PTofMW7iA3rBXpQ8IC4ooN1eHh7CPUO9BYTEcHTtxtwGcM4mPrO3JW6GLHW5w2ejMwe8U22hZ+W5lBeT6TMjWpBavY1I6qGU18Et6d5uc86pWBkVgseX2QYRY4="
     - CONTAINER_NAME=builder_container
+    # in order to evaluate in container env var the \ is required to escape, otherwise the evaluation of the PATH variable
+    # will be done on the host's shell outside of the container
     - SH="docker exec -it $CONTAINER_NAME bash -c"
+    # env used for non container builds
     - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
     - QGC_CUSTOM_APP_NAME="Custom QGS"
     - QGC_CUSTOM_GENERIC_NAME="Custom Ground Station"
@@ -18,83 +23,72 @@ env:
     - GIT_USER="Auterion_CI"
     - GIT_EMAIL="auterion_ci@auterion.com"
     - CCACHE_DIR=${HOME}/.ccache
+
 cache: ccache
+
 git:
   depth: false
-".template_linux":
+
+.template_linux: &template_linux
   os: linux
   dist: xenial
   services: docker
   sudo: required
-  install: &1
+  install:
     - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-    - docker pull $DOCKER_IMAGE || true
-    - docker build --pull --cache-from $DOCKER_IMAGE -f deploy/$DOCKERFILE -t $DOCKER_IMAGE
-      .
-    - docker run --privileged --name $CONTAINER_NAME --rm -td -v `pwd`:`pwd` --env=CCACHE_DIR=$CCACHE_DIR
-      -v ${CCACHE_DIR}:${CCACHE_DIR} -w `pwd` $DOCKER_IMAGE
-  script: &2
+    - docker run --privileged --name $CONTAINER_NAME --rm -td -v `pwd`:`pwd` --env=CCACHE_DIR=$CCACHE_DIR -v ${CCACHE_DIR}:${CCACHE_DIR} -w `pwd` $DOCKER_IMAGE
+  script:
     - $SH "ccache -z"
-    - $SH "mkdir \$SHADOW_BUILD_DIR && cd \$SHADOW_BUILD_DIR && qmake -r $PWD/qgroundcontrol.pro
-      CONFIG+=$CONFIG && make -j`nproc --all`"
+    - $SH "mkdir \$SHADOW_BUILD_DIR && cd \$SHADOW_BUILD_DIR && qmake -r $PWD/qgroundcontrol.pro CONFIG+=$CONFIG && make -j`nproc --all`"
     - $SH "ccache -s"
-  after_success: &3
+  after_success:
     - docker push $DOCKER_IMAGE
-  before_deploy: &4
+  before_deploy:
     - mkdir $RELEASE_DIR
+    # create linux appimage
     - $SH "export QGC_CUSTOM_APP_NAME=$QGC_CUSTOM_APP_NAME QGC_CUSTOM_GENERIC_NAME=$QGC_CUSTOM_GENERIC_NAME
       QGC_CUSTOM_BINARY_NAME=$QGC_CUSTOM_BINARY_NAME QGC_CUSTOM_LINUX_START_SH=$QGC_CUSTOM_LINUX_START_SH
-      QGC_CUSTOM_APP_ICON=$QGC_CUSTOM_APP_ICON QGC_CUSTOM_APP_ICON_NAME=$QGC_CUSTOM_APP_ICON_NAME
-      QGC_CUSTOM_BUILD_FOLDER=$QGC_CUSTOM_BUILD_FOLDER && ./deploy/create_linux_appimage.sh
-      $PWD \$SHADOW_BUILD_DIR/release \$SHADOW_BUILD_DIR/release/package"
+      QGC_CUSTOM_APP_ICON=$QGC_CUSTOM_APP_ICON QGC_CUSTOM_APP_ICON_NAME=$QGC_CUSTOM_APP_ICON_NAME QGC_CUSTOM_BUILD_FOLDER=$QGC_CUSTOM_BUILD_FOLDER
+      && ./deploy/create_linux_appimage.sh $PWD \$SHADOW_BUILD_DIR/release \$SHADOW_BUILD_DIR/release/package"
     - docker cp $CONTAINER_NAME:$SHADOW_BUILD_DIR/release/package/. $RELEASE_DIR
-    - mv $RELEASE_DIR/AuterionGS.AppImage $RELEASE_DIR/$APPIMAGE_BINARY_NAME
+
 matrix:
   include:
     - name: CentOS Installer
-      os: linux
-      dist: xenial
-      services: docker
-      sudo: required
-      install: *1
-      script: *2
-      after_success: *3
-      before_deploy: *4
+      <<: *template_linux
       env:
-        - DOCKERFILE=Dockerfile_centos
         - DOCKER_IMAGE=auterion/ags_builder_centos
-        - APPIMAGE_BINARY_NAME="AuterionGS_centos.AppImage"
-".template_deploy":
+
+.template_deploy: &template_deploy
   provider: releases
-  api_key: &5
+  api_key:
     secure: pPLTR3o8zgPwzbDH6C2Z1qHXtDxpSTtPT0gT0N4/Emf1d39vkCT0iQKlZjUQL/7CqunC7/9RTauoc8jZh2oSFpVbf2XaJjdUX/yOf0ZWDGEye/FsWi6v7LkwZUlDzT81SPHCRc0AjHvi4WdEjdT4uMuriisDx+pKVl/cg5Ofwfb3FD2nMug1vGImoLU0ue47Uqxwn5XGc76PD1N7zIzNzYs7w4Y1vFVbHZwNrix6uCReYn9I5StIBiVBMBciZHL1Y3dGIiyfnMod29/jfWuL4VsT/u1HDH0sXDv6d3gvPJWXOuA2LWXEy7N+gopVj/NeEDj1XJT04AN9hzPydllqd++PeSk5a1DUpAiYDd8deQB2VUlV6fHIkE92ljkoSb+pO5TNdcPUCpsXl/CH5LncFnPnJG6PRSPBZSkY9QiehtFEzpQRTCCjNeVnY5RgFyqRfXUHBI3NwylRr76J+JJibIwVMYLDguV73/T2noB3gEMDJZYdz1uv3nry6E4CHmsOZdGkHQi6DsbSxIjTI2XL+fpaKS0xaslchv9iyJBDj2YkRcTSfyxhevumWAvoXMB+yp8eH9LhJauL0SYgTdg5dsWUeFImd4BopFhiEbbuN43e/fxU5kUJb2LrMuc22fLPJjG4g7FJMsywmoebAcg90a66jTD8DMJi3A/Nb0KDCVY=
   file_glob: true
-  file: &6
-    - "$RELEASE_DIR/*"
+  file:
+    - $RELEASE_DIR/*
   skip_cleanup: true
+
 deploy:
-  - provider: releases
-    api_key: *5
-    file_glob: true
-    file: *6
-    skip_cleanup: true
+  # release a stable version when a commit is tagged with prefix "v*'
+  - <<: *template_deploy
     on:
       all_branches: true
       tags: true
       condition: "$TRAVIS_TAG =~ ^v*$ && $CONFIG == installer"
-  - provider: releases
-    api_key: *5
-    file_glob: true
-    file: *6
-    skip_cleanup: true
+  #  # pre-release a version for each commit with prefix 'pr-*' on any branch except master
+  - <<: *template_deploy
     prerelease: true
     overwrite: true
     on:
       all_branches: true
       tags: true
       branch:
-        - "/^pr-$/"
-      condition: "$CONFIG == installer"
+        - /^pr-$/
+      condition: $CONFIG == installer
+
 notifications:
   slack:
-    secure: tF+Hz2LB4CickiVYHmP6izHX8tEV5Cku6H2gfJuspNiKXERd9sk6cfE5ey2/ELIr5PnkwNSDeoWAh47fA8mMadQ+I3UmqbkTF7FxBzVHD6PodkB7v8BYEYtqpQPBzYDefm0PQH6IBp8e0Gf4FHxpGbPfdsGlJnVh2dgGhKx/MmPvqoFfc2DbQxzAbAPb79H2BqKJMJOsta4JBbuGf2heYLpMrkARdPnIy/qL+lK5kSbsmd1KNu3krdeKs4a0onVfRAzHO3sdh2BeRnkvRcynOoNVK8T8YjsrcLIS7sSEORP3jHn/ttwvNiVk0g1kfPLktishzCD+1/B8jU+CFvDXKzdU11lnW9ahX5ip7r7GdUVaRBH5B8YcZHFpUGcBNn7FbizepsmQB/8hihuTUdwbMCzjoSuPlinRMsiZhOkTAdHIT5ftoAICo9KzjLoGHPGjENCb1AG3r/BUo+ZwOT2SqE4FtWF1jpUdd5mU8ndmodZFdWUaJVvO82Lu5JUV4tDQnOcNMzpAkinXYyJOd2FHKoudFGkzO3uD4ebX4V1g1RDMnkaY4+TzyAMOhr3+j7mwhf7BvsRd7wgYxdKgq8zDP7wXdYfBA4KH93lTJyDd6XiBkSl8po2bhtzsFaMrkaMAxc3SekseYukbeLKsFL4+UuNIuY3IzoHrnKL3xGu4Us4=
+    rooms:
+      - secure: uKo8OQ2FMGv9sGv6RnQpntbJIZywofPTPVjNLSz2aqectnj5uaMVQGdGCkzXo+yqplSB8K6Wkg5qo4qpOhjLY1PtM3J8YW567S5e9Vl9SxC3SUYalLkdUGbxySEE2lxKdgn25Jt52Gj/Qw8YYfTG9QThXnUaTNJnC7KEIF+P7HgCYxBKF0OOYosB9T7LV2vk3V1ozuPcYCdHbUPOBASlQqWqTN934qjMY67jsOdqZp/NBrzhIyfO5CqUnyJ/gTh3XYdBlXFkEh0clS5h1biPlsGDqXGPJnGeWN2j0OWfkuSVVXZVO54vl1eUIDANt9w/M5ZtJIkr2MKiBk+zqQMaiCK7iS9wogEz2IpwH1mAyH5+Bjb5dcog/hjSB6GJAAdBOVAGn9oJS22n3P7UJ3q2n7kFr/hOSkZSY/Dn3EhfIcISToL71PHFTZeQuN9JT8oAm/9VloRI/HlOXsVieCnQsnywcxzhb0h6k5P8PAsSx6T3gYTNzOo8AdxtKaySEt135vMyTFp2goa1CTJyHF02aPF/68h5p7WcVvWQbKE4YoiBzRfJVYeDtYJ5+TyJFcEv+WEO6O2i7HLCnAUIQG3JhC1IxAxsaPa8TQLVWEro0XkUAdtvOsKVkPl/5uCwwYhhoXys7dFTDm5YwFezDor+suQtYnt+CSxaMMdGdRi6z8s=
+    on_success: change
+    on_failure: always
