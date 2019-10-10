@@ -2,17 +2,14 @@ language: cpp
 
 env:
   global:
-    - CONFIG=installer
-    - RELEASE_DIR=/tmp/release
-    - DOCKER_USER=auterionci
+    - CONFIG="installer"
+    - RELEASE_DIR="/tmp/release"
+    - DOCKER_USER="auterionci"
     # encrypted DOCKER_PASS
     - secure: "OcY43uy3fGkq7stbHJKvr1FZawgVd0G+y2bojAOjp/I0asCblUZLZU6ewddd8DRkR53+gYzK+MVfaRMKkSsh8s5eOWiXFPNgkyGFXLzroGXvKSipfAQ6v5ZTYR47sLRAETWkr8i9b4He1z55UUfIAsBkg75WGh2jpytN71Ia6ewBLgWZyVAPPrzUCOy2p2GN94/30br1zlFItfn+lpPktDrlAL2JQv/4/myo5WS5sxCmShgRFYssM4kuh5FBdCZykMKSuG0L2rFPe1KA8DLgU3lZfPuEnI+sr5uNzDQPjzem4Gi2KDpktF9zkdyE8uQrUSLLKjpjNdxO3SVRRr3NtJIRqh9b+tj4eoBA0SrodYHahu98C6vtSvw8vNt16FmYTCUwXFofMTGxzU9QedOYgo7MJBYrf+R23MpOBSFXknw0hDJMwyyXLM8nITwhWybA24qbYncJR0PNmpSB5uE1KaebSHNtXpXLe8Aag04h6z7pDWUnV4zU9fRQLcwaHhL1Mu/k0PrYZPXp0Ohtu10XYVhaCchq34ViEMM80If8ccEfYEYS7PTofMW7iA3rBXpQ8IC4ooN1eHh7CPUO9BYTEcHTtxtwGcM4mPrO3JW6GLHW5w2ejMwe8U22hZ+W5lBeT6TMjWpBavY1I6qGU18Et6d5uc86pWBkVgseX2QYRY4="
-    - CONTAINER_NAME=builder_container
-    # in order to evaluate in container env var the \ is required to escape, otherwise the evaluation of the PATH variable
-    # will be done on the host's shell outside of the container
+    - CONTAINER_NAME="builder_container"
     - SH="docker exec -it $CONTAINER_NAME bash -c"
-    # env used for non container builds
-    - SHADOW_BUILD_DIR=/tmp/shadow_build_dir
+    - SHADOW_BUILD_DIR="/tmp/shadow_build_dir"
     - QGC_CUSTOM_APP_NAME="Custom QGS"
     - QGC_CUSTOM_GENERIC_NAME="Custom Ground Station"
     - QGC_CUSTOM_BINARY_NAME="CustomQGC"
@@ -20,7 +17,8 @@ env:
     - QGC_CUSTOM_APP_ICON="$PWD/resources/icons/qgroundcontrol.png"
     - QGC_CUSTOM_APP_ICON_NAME="qgroundcontrol"
     - QGC_CUSTOM_BUILD_FOLDER="custom"
-    - CCACHE_DIR=${HOME}/.ccache
+    - CCACHE_DIR="$HOME/.ccache"
+    - PROJECT_ROOT="$PWD"
 
 cache: ccache
 
@@ -34,20 +32,24 @@ git:
   sudo: required
   install:
     - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-    - docker run --privileged --name $CONTAINER_NAME --rm -td -v `pwd`:`pwd` --env=CCACHE_DIR=$CCACHE_DIR -v ${CCACHE_DIR}:${CCACHE_DIR} -w `pwd` $DOCKER_IMAGE
+    - docker run --privileged --name $CONTAINER_NAME --rm -td  -e PROJECT_ROOT="$PROJECT_ROOT" -e CCACHE_DIR="$CCACHE_DIR"
+      -e QGC_CUSTOM_APP_NAME="$QGC_CUSTOM_APP_NAME" -e QGC_CUSTOM_GENERIC_NAME="$QGC_CUSTOM_GENERIC_NAME"
+      -e QGC_CUSTOM_BINARY_NAME="$QGC_CUSTOM_BINARY_NAME" -e QGC_CUSTOM_LINUX_START_SH="$QGC_CUSTOM_LINUX_START_SH"
+      -e QGC_CUSTOM_APP_ICON="$QGC_CUSTOM_APP_ICON" -e QGC_CUSTOM_APP_ICON_NAME="$QGC_CUSTOM_APP_ICON_NAME"
+      -e QGC_CUSTOM_BUILD_FOLDER="$QGC_CUSTOM_BUILD_FOLDER"
+      -v `pwd`:`pwd` -v "$CCACHE_DIR:$CCACHE_DIR" -w `pwd` $DOCKER_IMAGE
   script:
-    - $SH "ccache -z"
-    - $SH "mkdir \$SHADOW_BUILD_DIR && cd \$SHADOW_BUILD_DIR && qmake -r $PWD/qgroundcontrol.pro CONFIG+=$CONFIG && make -j`nproc --all`"
-    - $SH "ccache -s"
+    - $SH 'ccache -z'
+    - $SH 'mkdir $SHADOW_BUILD_DIR && cd $SHADOW_BUILD_DIR && qmake -r $PROJECT_ROOT/qgroundcontrol.pro CONFIG+=$CONFIG && make -j`nproc --all`'
+    - $SH 'ccache -s'
     - $SH "ls -lah \$SHADOW_BUILD_DIR/release"
   before_deploy:
     - mkdir $RELEASE_DIR
     # create linux appimage
-    - $SH "export QGC_CUSTOM_APP_NAME=$QGC_CUSTOM_APP_NAME QGC_CUSTOM_GENERIC_NAME=$QGC_CUSTOM_GENERIC_NAME
-      QGC_CUSTOM_BINARY_NAME=$QGC_CUSTOM_BINARY_NAME QGC_CUSTOM_LINUX_START_SH=$QGC_CUSTOM_LINUX_START_SH
-      QGC_CUSTOM_APP_ICON=$QGC_CUSTOM_APP_ICON QGC_CUSTOM_APP_ICON_NAME=$QGC_CUSTOM_APP_ICON_NAME QGC_CUSTOM_BUILD_FOLDER=$QGC_CUSTOM_BUILD_FOLDER
-      && ./deploy/create_linux_appimage.sh $PWD \$SHADOW_BUILD_DIR/release \$SHADOW_BUILD_DIR/release/package"
-    - docker cp $CONTAINER_NAME:$SHADOW_BUILD_DIR/release/package/. $RELEASE_DIR
+    - $SH './deploy/create_linux_appimage.sh $PROJECT_ROOT $SHADOW_BUILD_DIR/release $SHADOW_BUILD_DIR/release'
+    # copy the AppImage from container to the build host
+    - docker cp $CONTAINER_NAME:$SHADOW_BUILD_DIR/release/$QGC_CUSTOM_BINARY_NAME.AppImage $RELEASE_DIR
+    - chmod +x $RELEASE_DIR/$APPIMAGE_BINARY_NAME
 
 matrix:
   include:
