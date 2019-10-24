@@ -30,6 +30,8 @@ public:
     GeoFenceController(PlanMasterController* masterController, QObject* parent = nullptr);
     ~GeoFenceController();
 
+    void init();
+
     Q_PROPERTY(QmlObjectListModel*  polygons                READ polygons                                           CONSTANT)
     Q_PROPERTY(QmlObjectListModel*  circles                 READ circles                                            CONSTANT)
     Q_PROPERTY(QGeoCoordinate       breachReturnPoint       READ breachReturnPoint      WRITE setBreachReturnPoint  NOTIFY breachReturnPointChanged)

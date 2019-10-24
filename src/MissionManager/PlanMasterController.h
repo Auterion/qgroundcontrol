@@ -54,7 +54,7 @@ public:
 
     /// Determines if the plan has all data needed to be saved or sent to the vehicle. Currently the only case where this
     /// would return false is when it is still waiting on terrain data to determine correct altitudes.
-    Q_INVOKABLE bool readyForSaveSend(void) const { return _missionController.readyForSaveSend(); }
+    Q_INVOKABLE bool readyForSaveSend(void) const { return _missionController->readyForSaveSend(); }
 
     /// Sends a plan to the specified file
     ///     @param[in] vehicle Vehicle we are sending a plan to
@@ -70,9 +70,9 @@ public:
     Q_INVOKABLE void removeAll(void);                       ///< Removes all from controller only, synce required to remove from vehicle
     Q_INVOKABLE void removeAllFromVehicle(void);            ///< Removes all from vehicle and controller
 
-    MissionController*      missionController(void)     { return &_missionController; }
-    GeoFenceController*     geoFenceController(void)    { return &_geoFenceController; }
-    RallyPointController*   rallyPointController(void)  { return &_rallyPointController; }
+    MissionController*      missionController(void)     { return _missionController; }
+    GeoFenceController*     geoFenceController(void)    { return _geoFenceController; }
+    RallyPointController*   rallyPointController(void)  { return _rallyPointController; }
 
     bool        offline         (void) const { return _offline; }
     bool        containsItems   (void) const;
@@ -124,9 +124,9 @@ private:
     Vehicle*                _managerVehicle;    ///< Either active vehicle or _controllerVehicle if none
     bool                    _flyView;
     bool                    _offline;
-    MissionController       _missionController;
-    GeoFenceController      _geoFenceController;
-    RallyPointController    _rallyPointController;
+    MissionController*       _missionController;
+    GeoFenceController*      _geoFenceController;
+    RallyPointController*    _rallyPointController;
     bool                    _loadGeoFence;
     bool                    _loadRallyPoints;
     bool                    _sendGeoFence;

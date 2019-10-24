@@ -40,6 +40,10 @@ RallyPointController::RallyPointController(PlanMasterController* masterControlle
     , _currentRallyPoint(nullptr)
     , _itemsRequested(false)
 {
+}
+
+void
+RallyPointController::init() {
     connect(&_points, &QmlObjectListModel::countChanged, this, &RallyPointController::_updateContainsItems);
 
     managerVehicleChanged(_managerVehicle);

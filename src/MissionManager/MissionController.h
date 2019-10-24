@@ -43,6 +43,8 @@ public:
     MissionController(PlanMasterController* masterController, QObject* parent = nullptr);
     ~MissionController();
 
+    void init();
+
     typedef struct _MissionFlightStatus_t {
         double  maxTelemetryDistance;
         double  totalDistance;

@@ -50,6 +50,10 @@ GeoFenceController::GeoFenceController(PlanMasterController* masterController, Q
     , _itemsRequested           (false)
     , _px4ParamCircularFenceFact(nullptr)
 {
+}
+
+void
+GeoFenceController::init() {
     if (_metaDataMap.isEmpty()) {
         _metaDataMap = FactMetaData::createMapFromJsonFile(QStringLiteral(":/json/BreachReturn.FactMetaData.json"), nullptr /* metaDataParent */);
     }
